@@ -52,11 +52,11 @@ class Inline:
         if not remove:  
             keyboard.append(
                 [
-                    self._btn("▶️  Resume", callback_data=f"controls resume {chat_id}", style=ButtonStyle.SUCCESS),
-                    self._btn("⏸  Pause", callback_data=f"controls pause {chat_id}", style=ButtonStyle.PRIMARY),
-                    self._btn("⏭  Skip", callback_data=f"controls skip {chat_id}", style=ButtonStyle.PRIMARY),
-                    self._btn("🔄  Replay", callback_data=f"controls replay {chat_id}", style=ButtonStyle.SUCCESS),
-                    self._btn("⏹  Stop", callback_data=f"controls stop {chat_id}", style=ButtonStyle.DANGER),
+                    self._btn("▶️", callback_data=f"controls resume {chat_id}", style=ButtonStyle.SUCCESS),
+                    self._btn("⏸", callback_data=f"controls pause {chat_id}", style=ButtonStyle.PRIMARY),
+                    self._btn("⏭", callback_data=f"controls skip {chat_id}", style=ButtonStyle.PRIMARY),
+                    self._btn("🔄", callback_data=f"controls replay {chat_id}", style=ButtonStyle.SUCCESS),
+                    self._btn("⏹", callback_data=f"controls stop {chat_id}", style=ButtonStyle.DANGER),
                 ]
             )
 
