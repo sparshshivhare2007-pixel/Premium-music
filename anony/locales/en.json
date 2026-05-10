@@ -78,7 +78,7 @@
     "play_usage": "<emoji id='5039953030171067177'>🎀</emoji> <b>Usage:</b> <code>/play [song name]</code>",
     "play_seeking": "<emoji id='6199237060675507796'>😵‍💫</emoji> Seeking the current stream...",
     "play_again": "<emoji id='5780517739756000213'>♾</emoji> Replaying the current media...",
-    "play_now": "<emoji id='5222472119295684375'>🎶</emoji> Play Now",
+    "play_now": "<emoji id='Play Now",
     "play_next": "<emoji id='6199237060675507796'>😵‍💫</emoji> Downloading next media from queue...",
     "play_invite": "<emoji id='5258347573097303596'>😽</emoji> Inviting {0} assistant to your chat.",
     "play_searching": "<emoji id='6199237060675507796'>😵‍💫</emoji> Searching...",
