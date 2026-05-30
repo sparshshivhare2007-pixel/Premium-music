@@ -1,7 +1,5 @@
 import os
 import re
-import yt_dlp
-import random
 import asyncio
 import aiohttp
 from pathlib import Path
@@ -10,14 +8,18 @@ from py_yt import Playlist, VideosSearch
 from anony import logger
 from anony.helpers import Track, utils
 
-# Fast Download API
-API_URL = "https://shrutibots.site"
+# Fast Download API config (Bina Cookies ke download karne ke liye)
+API_URL = os.environ.get("SHRUTI_API_URL", "https://api.shrutibots.site")
+# @SHRUTIAPIBOT se mili hui API KEY yahan 'YOUR_API_KEY' ki jagah dalein ya fir .env mein SHRUTI_API_KEY laga dein
+API_KEY = os.environ.get("SHRUTI_API_KEY", "ShrutiBotsFxBCNJG7gkajQqdBift3") 
+
+DOWNLOAD_DIR = "downloads"
 
 class YouTube:
     def __init__(self):
         self.base = "https://www.youtube.com/watch?v="
         self.cookies = []
-        self.checked = False
+        self.checked = True  # Cookies bypass karne ke liye True rakha hai
         self.cookie_dir = "anony/cookies"
         self.warned = False
         self.regex = re.compile(
@@ -27,103 +29,52 @@ class YouTube:
         )
 
     def get_cookies(self):
-        if not self.checked:
-            if os.path.exists(self.cookie_dir):
-                for file in os.listdir(self.cookie_dir):
-                    if file.endswith(".txt"):
-                        self.cookies.append(f"{self.cookie_dir}/{file}")
-            self.checked = True
-        return random.choice(self.cookies) if self.cookies else None
+        # Ab cookies ki koi zaroorat nahi hai
+        return None
 
     async def save_cookies(self, urls: list[str]) -> None:
-        if not os.path.exists(self.cookie_dir):
-            os.makedirs(self.cookie_dir)
-        async with aiohttp.ClientSession() as session:
-            for url in urls:
-                try:
-                    name = url.split("/")[-1]
-                    link = "https://batbin.me/raw/" + name
-                    async with session.get(link) as resp:
-                        if resp.status == 200:
-                            content = await resp.read()
-                            with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
-                                fw.write(content)
-                except Exception as e:
-                    logger.error(f"Cookie Save Error: {e}")
-        logger.info(f"Cookies updated in {self.cookie_dir}.")
+        # Agar bot background mein ise call kare toh error na aaye, isliye pass kiya
+        pass
 
-    async def download_from_api(self, video_id: str, video: bool) -> str | None:
-        """Bypasses YouTube blocking using external API"""
-        mode = "video" if video else "audio"
+    async def download(self, video_id: str, video: bool = False) -> str | None:
+        if not video_id or len(video_id) < 3:
+            return None
+
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         ext = "mp4" if video else "mp3"
-        file_path = f"downloads/{video_id}.{ext}"
+        file_path = os.path.join(DOWNLOAD_DIR, f"{video_id}.{ext}")
+
+        # Agar gaana pehle se download hai, toh wahin se play karega
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            return file_path
+
+        mode = "video" if video else "audio"
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{API_URL}/download", params={"url": video_id, "type": mode}, timeout=10) as resp:
+                async with session.get(
+                    f"{API_URL}/download",
+                    params={"url": video_id, "type": mode, "api_key": API_KEY},
+                    timeout=aiohttp.ClientTimeout(total=600 if video else 300)
+                ) as resp:
                     if resp.status == 200:
-                        data = await resp.json()
-                        token = data.get("download_token")
-                        if token:
-                            stream_url = f"{API_URL}/stream/{video_id}?type={mode}&token={token}"
-                            async with session.get(stream_url, timeout=300) as fresp:
-                                if fresp.status in [200, 302]:
-                                    with open(file_path, "wb") as f:
-                                        async for chunk in fresp.content.iter_chunked(16384):
-                                            f.write(chunk)
-                                    return file_path
-        except:
-            pass
+                        with open(file_path, "wb") as f:
+                            async for chunk in resp.content.iter_chunked(131072):
+                                f.write(chunk)
+                        
+                        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                            return file_path
+                    else:
+                        logger.error(f"API Error: Status {resp.status}")
+        except Exception as e:
+            logger.error(f"External API Download Error: {e}")
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
         return None
 
-    async def download(self, video_id: str, video: bool = False) -> str | None:
-        url = self.base + video_id
-        ext = "mp4" if video else "webm"
-        filename = f"downloads/{video_id}.{ext}"
-
-        if Path(filename).exists():
-            return filename
-
-        # 1. First attempt: External API (Bypass YouTube blocking)
-        api_file = await self.download_from_api(video_id, video)
-        if api_file:
-            return api_file
-
-        # 2. Second attempt: yt-dlp with Android Spoofing (Harder to block)
-        cookie = self.get_cookies()
-        ydl_opts = {
-            "outtmpl": "downloads/%(id)s.%(ext)s",
-            "quiet": True,
-            "geo_bypass": True,
-            "nocheckcertificate": True,
-            "cookiefile": cookie,
-            # Android Spoofing
-            "extractor_args": {
-                "youtube": {
-                    "player_client": ["android", "web"],
-                    "player_skip": ["webpage", "configs"],
-                }
-            }
-        }
-
-        if video:
-            ydl_opts["format"] = "bestvideo[height<=720]+bestaudio/best"
-            ydl_opts["merge_output_format"] = "mp4"
-        else:
-            ydl_opts["format"] = "bestaudio/best"
-
-        def _download():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                try:
-                    ydl.download([url])
-                    return filename
-                except Exception as e:
-                    logger.error(f"yt-dlp failed: {e}")
-                    return None
-
-        return await asyncio.to_thread(_download)
-
-    # Search aur Playlist functions pehle jaise hi rahenge
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
         try:
             _search = VideosSearch(query, limit=1)
@@ -142,7 +93,8 @@ class YouTube:
                     view_count=data.get("viewCount", {}).get("short"),
                     video=video,
                 )
-        except:
+        except Exception as e:
+            logger.error(f"Search Error: {e}")
             return None
 
     async def playlist(self, limit: int, user: str, url: str, video: bool) -> list:
@@ -163,7 +115,6 @@ class YouTube:
                     video=video,
                 )
                 tracks.append(track)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Playlist Error: {e}")
         return tracks
-        
