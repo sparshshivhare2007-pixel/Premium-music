@@ -66,7 +66,7 @@ async def start(_, message: types.Message):
 
         if private
 
-        else message.lang["start_gp"].format(app.name)
+        else message.lang["start_gp"].format(message.from_user.first_name, app.name, message.chat.title, app.name)
 
     )
 
