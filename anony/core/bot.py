@@ -1,13 +1,9 @@
 # Copyright (c) 2025 AnonymousX1025
-
 # Licensed under the MIT License.
-
 # This file is part of AnonXMusic
 
 import pyrogram
-
 from anony import config, logger
-
 
 class Bot(pyrogram.Client):
     def __init__(self):
@@ -18,7 +14,7 @@ class Bot(pyrogram.Client):
             bot_token=config.BOT_TOKEN,
             parse_mode=pyrogram.enums.ParseMode.HTML,
             max_concurrent_transmissions=7,
-            disable_web_page_preview=True,  # ✅ Fixed: Replaced LinkPreviewOptions
+            # ❌ Completely remove the disable_web_page_preview line from here
         )
         self.owner = config.OWNER_ID
         self.logger = config.LOGGER_ID
@@ -28,9 +24,6 @@ class Bot(pyrogram.Client):
     async def boot(self):
         """
         Starts the bot and performs initial setup.
-
-        Raises:
-            SystemExit: If the bot fails to access the log group or is not an administrator in the logger group.
         """
         await super().start()
         self.id = self.me.id
@@ -39,7 +32,12 @@ class Bot(pyrogram.Client):
         self.mention = self.me.mention
 
         try:
-            await self.send_message(self.logger, "Bot Started")
+            # If you want to disable link previews on this specific message, you do it here now:
+            await self.send_message(
+                self.logger, 
+                "Bot Started", 
+                disable_web_page_preview=True  # Optional: Keep it safe from previews here instead
+            )
             get = await self.get_chat_member(self.logger, self.id)
         except Exception as ex:
             raise SystemExit(f"Bot has failed to access the log group: {self.logger}\nReason: {ex}")
