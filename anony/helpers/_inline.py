@@ -3,7 +3,20 @@
 # This file is part of AnonXMusic
 
 from pyrogram import types
-from pyrogram.enums import ButtonStyle
+
+# Handle different Pyrogram versions for ButtonStyle
+try:
+    from pyrogram.enums import ButtonStyle
+except ImportError:
+    try:
+        from pyrogram.types import ButtonStyle
+    except ImportError:
+        # Fallback for older Pyrogram versions
+        class ButtonStyle:
+            PRIMARY = 0
+            SUCCESS = 1
+            DANGER = 2
+            DEFAULT = 3
 
 from anony import app, config, lang
 from anony.core.lang import lang_codes
@@ -166,7 +179,7 @@ class Inline:
             ],
             [
                 self._btn("📜  Help", callback_data="help", style=ButtonStyle.PRIMARY),
-                self._btn("👤  Owner", url=owner_link, style=ButtonStyle.PRIMARY),  # Owner button fixed
+                self._btn("👤  Owner", url=owner_link, style=ButtonStyle.PRIMARY),
             ],
             [
                 self._btn("💬  Support", url=sup_chat, style=ButtonStyle.PRIMARY),
@@ -179,7 +192,7 @@ class Inline:
                 [
                     self._btn(
                         "📁  Source Code",
-                        url="t.me/link_buyer",  # Fixed source link
+                        url="t.me/link_buyer",
                         style=ButtonStyle.DANGER,
                     )
                 ]
